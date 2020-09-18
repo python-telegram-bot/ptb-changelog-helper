@@ -67,7 +67,7 @@ def apply_patterns(text, p_r_dict):
 docs_text = apply_patterns(version_header + body, docs_patterns)
 links = []
 for match in re.finditer(pr_pattern, docs_text):
-    links.append(f'.. _`{match.group()}`: {PR_URL}{match.group(1)}')
+    links.append(f'.. _`{match.group()}`: {PR_URL}{match.group(2)}')
 docs_text += '\n'.join(links)
 
 # For the GitHub release
