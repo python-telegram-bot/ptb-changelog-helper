@@ -26,7 +26,7 @@ def get_changelog():
 
 
 def get_commits_since_release():
-    pattern = re.compile(r"^Bump to v[0-9.]*$", flags=re.IGNORECASE)
+    pattern = re.compile(r"^Bump (version|) to v[0-9.]*$", flags=re.IGNORECASE)
     all_commits = REPO.get_commits()
     relevant_commits = []
 
