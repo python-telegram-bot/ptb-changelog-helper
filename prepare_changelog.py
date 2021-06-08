@@ -16,6 +16,10 @@ version_header = f'\nVersion {version_number}'
 insertion.append(version_header)
 insertion.append((len(version_header) - 1) * '=')
 insertion.append(f'*Released {dtm.date.today().strftime("%Y-%m-%d")}*\n')
+insertion.append(
+    f'This is the technical changelog for version {version_number}. More elaborate release notes '
+    f'can be found in the news channel @pythontelegrambotchannel.\n'
+)
 insertion.append('\n'.join(get_commits_since_release()))
 
 # insert

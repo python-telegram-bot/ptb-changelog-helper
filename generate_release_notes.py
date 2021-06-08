@@ -27,6 +27,10 @@ pr_pattern = re.compile(r"(#([0-9]*))", flags=re.MULTILINE)
 pr_rst_replace = "`\\1`_"
 pr_md_replace = rf"[\1]({PR_URL}\2)"
 pr_html_replace = rf'<a href="{PR_URL}\2">\1</a>'
+channel_pattern = re.compile('(@pythontelegrambotchannel)')
+channel_rst_replace = "`\\1 <https://t.me/pythontelegrambotchannel>`_"
+channel_md_replace = "[\\1](https://t.me/pythontelegrambotchannel)"
+channel_html_replace = r'<a href="\1">\1</a>'
 bp_pattern = re.compile(r"\n- ")
 bp_replace = r"\n• "
 
@@ -42,8 +46,9 @@ def pr_html_user_mention_replace(match_obj):
 
 # Some preparations for the different outputs
 docs_patterns = {cc_pattern: cc_rst_replace, code_pattern: code_rst_replace,
-                 pr_pattern: pr_rst_replace}
-release_patterns = {cc_pattern: cc_md_replace, code_pattern: code_md_replace}
+                 pr_pattern: pr_rst_replace, channel_pattern: channel_rst_replace}
+release_patterns = {cc_pattern: cc_md_replace, code_pattern: code_md_replace,
+                    channel_pattern: channel_md_replace}
 channel_patterns = {cc_pattern: cc_html_replace, code_pattern: code_html_replace,
                     pr_pattern: pr_html_user_mention_replace, bp_pattern: bp_replace}
 
