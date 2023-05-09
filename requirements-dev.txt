@@ -1,0 +1,1 @@
+pre-commit  # needed for pre-commit hooks in the git commit command
