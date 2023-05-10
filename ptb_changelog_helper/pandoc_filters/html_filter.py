@@ -1,22 +1,26 @@
 import re
+from pydoc import Doc
 
-from panflute import BulletList, Header, Link, Para, Plain, Str, Strong, run_filter
+from panflute import BulletList, Element, Header, Link, Para, Plain, Str, Strong, run_filter
 
 LINE_BREAK = Str("\n")
 
 
-def build_pr_link(number: str):
+def build_pr_link(number: str) -> str:
     return f"https://github.com/python-telegram-bot/python-telegram-bot/pull/{number}"
 
 
-def action(element, document):
-    if isinstance(element, Str):
-        if match := re.match(pattern=r"\((\#(\d+))\)", string=element.text):
-            return [
-                Str("("),
-                Link(Str(match.group(1)), url=build_pr_link(match.group(2))),
-                Str(")"),
-            ]
+def action(
+    element: Element, document: Doc | None  # pylint: disable=unused-argument
+) -> Element | list[Element] | None:
+    if isinstance(element, Str) and (
+        match := re.match(pattern=r"\((\#(\d+))\)", string=element.text)
+    ):
+        return [
+            Str("("),
+            Link(Str(match.group(1)), url=build_pr_link(match.group(2))),
+            Str(")"),
+        ]
     if isinstance(element, Header):
         return Plain(Strong(*element.content))
     if isinstance(element, Para):
@@ -31,7 +35,7 @@ def action(element, document):
     return element
 
 
-def main(doc=None):
+def main(doc: Doc | None = None) -> Doc | None:
     return run_filter(action, doc=doc)
 
 

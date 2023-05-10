@@ -1,0 +1,18 @@
+query getCommitSince($date: GitTimestamp!, $after: String = null) {
+    repository(owner: "python-telegram-bot", name: "python-telegram-bot") {
+        object(expression: "master") {
+            ... on Commit {
+                history(first: 100, since: $date, after: $after) {
+                    nodes {
+                        messageHeadline
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                        __typename
+                    }
+                }
+            }
+        }
+    }
+}

@@ -4,3 +4,6 @@
 /release.md
 /venv/
 /.idea/
+**/graphql.config.yml
+foo.py
+changelog.md
