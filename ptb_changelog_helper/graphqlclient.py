@@ -1,3 +1,4 @@
+"""This module contains a GraphQL client for GitHub's API."""
 from collections.abc import Collection
 from pathlib import Path
 from typing import Any, overload
@@ -11,6 +12,13 @@ from ptb_changelog_helper.const import USER_AGENT
 
 
 class GraphQLClient:
+    """A GraphQL client for GitHub's API.
+
+    Args:
+        auth (:obj:`str`): The OAuth token to use for authentication.
+
+    """
+
     def __init__(self, auth: str) -> None:
         # OAuth token must be prepended with "Bearer". User might forget to do this.
         authorization = auth if auth.casefold().startswith("bearer ") else f"Bearer {auth}"
@@ -29,9 +37,11 @@ class GraphQLClient:
         )
 
     async def initialize(self) -> None:
+        """Initialize the client and connect to the server."""
         await self._transport.connect()
 
     async def shutdown(self) -> None:
+        """Shutdown the client and disconnect from the server."""
         await self._transport.close()
 
     def _get_query_text(self, query_name: str) -> str:
@@ -67,7 +77,14 @@ class GraphQLClient:
         self,
         numbers: Collection[int],
     ) -> dict[int, githubtypes.PullRequest | githubtypes.Issue]:
-        """Get specified threads (issues/prs) on the PTB repository"""
+        """Get specified threads (issues/prs) on the PTB repository.
+
+        Warning:
+            Currently, if they have more than 100 associated labels or issues, only the first 100
+            will be returned. This is unlikely to be a problem in practice, but it is something to
+            consider. The ``pageInfo`` is returned however, such that the missing items can be
+            retrieved. A future version of this library may handle this automatically.
+        """
         insertion = "\n".join(
             self._get_thread_insertion.replace("<NUMBER>", str(number)) for number in numbers
         )
@@ -86,7 +103,7 @@ class GraphQLClient:
         return by_number
 
     async def get_ptb_devs(self) -> tuple[githubtypes.User, ...]:
-        """Get all PTB developers on the PTB organization"""
+        """Get all PTB developers on the PTB organization."""
         result = await self._do_request(query_name="getPTBDevs")
         organization = githubtypes.Organization(**result["organization"])
         return organization.membersWithRole.nodes or ()

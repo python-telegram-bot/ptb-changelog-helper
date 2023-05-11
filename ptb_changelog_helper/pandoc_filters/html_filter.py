@@ -1,3 +1,5 @@
+"""This module contains a Pandoc filter for converting to Telegram's HTML format."""
+
 import re
 from pydoc import Doc
 
@@ -6,19 +8,30 @@ from panflute import BulletList, Element, Header, Link, Para, Plain, Str, Strong
 LINE_BREAK = Str("\n")
 
 
-def build_pr_link(number: str) -> str:
+def _build_pr_link(number: str | int) -> str:
+    """Given a PR number, builds a link to a PR on GitHub."""
     return f"https://github.com/python-telegram-bot/python-telegram-bot/pull/{number}"
 
 
 def action(
     element: Element, document: Doc | None  # pylint: disable=unused-argument
 ) -> Element | list[Element] | None:
+    """Pandoc filter for converting to Telegram's HTML format.
+
+    Currently, this does the following:
+
+    * Insert links to PRs on GitHub
+    * Make headers bold
+    * Add line breaks before and after paragraphs
+    * Convert bullet lists to Telegram's format
+
+    """
     if isinstance(element, Str) and (
         match := re.match(pattern=r"\((\#(\d+))\)", string=element.text)
     ):
         return [
             Str("("),
-            Link(Str(match.group(1)), url=build_pr_link(match.group(2))),
+            Link(Str(match.group(1)), url=_build_pr_link(match.group(2))),
             Str(")"),
         ]
     if isinstance(element, Header):
@@ -36,6 +49,7 @@ def action(
 
 
 def main(doc: Doc | None = None) -> Doc | None:
+    """Main function to be called by panflute."""
     return run_filter(action, doc=doc)
 
 
