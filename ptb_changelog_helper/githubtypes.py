@@ -86,6 +86,10 @@ class User(BaseModel):
     login: str
     url: str
 
+    def as_markdown(self) -> str:
+        """Returns the user as markdown."""
+        return f"[@{self.login}]({self.url})"
+
 
 DEPENDABOT_USER = User(login="dependabot", url="https://github.com/apps/dependabot")
 """The user that Dependabot uses to open pull requests."""
@@ -158,7 +162,7 @@ class PullRequest(BaseModel):
             f"PullRequest {self.number}", "closing issues", self.closingIssuesReferences
         )
 
-    def to_md(self, exclude_users: Collection[User] = ()) -> str:
+    def as_markdown(self, exclude_users: Collection[User] = ()) -> str:
         """Return a Markdown representation of the pull request.
 
         This includes the author - unless excluded - and the closing issues references.
@@ -176,7 +180,7 @@ class PullRequest(BaseModel):
         md_str = f"#{self.number}"
 
         if self.author not in exclude_users:
-            md_str += f" by @{self.author.login}"
+            md_str += f" by {self.author.as_markdown()}"
 
         if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
             nodes = self.closingIssuesReferences.nodes
@@ -188,7 +192,7 @@ class PullRequest(BaseModel):
 
         return md_str
 
-    def effective_labels(self) -> tuple[Label, ...]:
+    def effective_labels(self) -> set[Label]:
         """Return the effective labels of the pull request, i.e. the labels of the pull request
         itself and the labels of the closing issues references.
         """
@@ -201,7 +205,7 @@ class PullRequest(BaseModel):
                 if issue.labels and issue.labels.nodes:
                     labels.update(set(issue.labels.nodes))
 
-        return tuple(labels)
+        return labels
 
 
 class MembersWithRole(_Connection):
