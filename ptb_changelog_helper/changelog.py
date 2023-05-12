@@ -1,5 +1,5 @@
 """This module contains a class based changelog generator for Python Telegram Bot."""
-
+import asyncio
 import datetime
 from collections.abc import Collection, Iterable
 from enum import StrEnum
@@ -7,6 +7,7 @@ from typing import NamedTuple
 
 from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
+from ptb_changelog_helper.graphqlclient import GraphQLClient
 
 
 class Version(NamedTuple):
@@ -256,3 +257,29 @@ class Changelog:
             block.as_markdown() for block in self.change_blocks.values() if block.has_changes()
         )
         return header + "\n\n" + changes
+
+    @classmethod
+    async def build_for_version(
+        cls, version: Version, graphql_client: GraphQLClient
+    ) -> "Changelog":
+        """Builds a changelog for a specific version.
+
+        Args:
+            version (:class:`Version`): The version of the changelog.
+            graphql_client (:class:`GraphQLClient`): The GraphQL client to use for fetching the
+                data from GitHub.
+
+        """
+        changelog = cls(version=version)
+
+        commits = await graphql_client.get_commits_since_last_release()
+        changelog.add_changes_from_commits(commits)
+
+        thread_numbers = changelog.get_all_thread_numbers()
+
+        threads, ptb_devs = await asyncio.gather(
+            graphql_client.get_threads(thread_numbers), graphql_client.get_ptb_devs()
+        )
+
+        changelog.update_changes_from_pull_requests(threads, ptb_devs)
+        return changelog
