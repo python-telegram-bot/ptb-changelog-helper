@@ -90,6 +90,11 @@ class User(BaseModel):
         """Returns the user as markdown."""
         return f"[@{self.login}]({self.url})"
 
+    def __hash__(self) -> int:
+        """We do this to ensure that authors are treated as users for the purposes of hashing,
+        especially for checking whether a author is in a collection of users."""
+        return hash((self.login, self.url))
+
 
 DEPENDABOT_USER = User(login="dependabot", url="https://github.com/apps/dependabot")
 """The user that Dependabot uses to open pull requests."""
@@ -184,11 +189,13 @@ class PullRequest(BaseModel):
 
         if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
             nodes = self.closingIssuesReferences.nodes
+            print(nodes)
             md_str += " closes "
             if len(nodes) == 1:
                 md_str += f"#{nodes[0].number}"
-            md_str += f"{', '.join(str(node.number) for node in nodes[:-1])} "
-            md_str += f"and {nodes[-1].number}"
+            else:
+                md_str += f"{', #'.join(str(node.number) for node in nodes[:-1])} "
+                md_str += f"and #{nodes[-1].number}"
 
         return md_str
 

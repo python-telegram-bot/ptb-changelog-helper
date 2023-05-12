@@ -1,12 +1,12 @@
 """This module contains a class based changelog generator for Python Telegram Bot."""
 
 import datetime
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from enum import StrEnum
 from typing import NamedTuple
 
 from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
-from ptb_changelog_helper.githubtypes import Issue, Label, PullRequest, User
+from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
 
 
 class Version(NamedTuple):
@@ -99,7 +99,9 @@ class Change:
         text: str,
     ):
         self.text: str = text
-        self.thread_numbers: set[int] = set(GITHUB_THREAD_PATTERN.findall(self.text))
+        self.thread_numbers: set[int] = {
+            int(match.group(1)) for match in GITHUB_THREAD_PATTERN.finditer(self.text)
+        }
         self.category: ChangeCategory = ChangeCategory.MAJOR
         self.pull_requests: set[PullRequest] = set()
         self.effective_labels: set[Label] = set()
@@ -107,7 +109,7 @@ class Change:
     def update_from_pull_requests(
         self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
     ) -> None:
-        """Fetches the pull requests of the change and stores them to :attr:`pull_requests`.
+        """Extracts the pull requests of the change and stores them to :attr:`pull_requests`.
         Also
 
             * updates the :attr:`text` with additional information as provided by
@@ -122,19 +124,18 @@ class Change:
             ptb_devs (:obj:`Collection` of :obj:`User`): The PTB developers. These will not be
                 mentioned in the change.
         """
-        threads = set(GITHUB_THREAD_PATTERN.findall(self.text))
         self.pull_requests = {
             thread
-            for thread_number in threads
+            for thread_number in self.thread_numbers
             if isinstance(thread := github_threads[thread_number], PullRequest)
         }
 
         for pull_request in self.pull_requests:
-            self.text.replace(
+            self.text = self.text.replace(
                 f"#{pull_request.number}", pull_request.as_markdown(exclude_users=ptb_devs)
             )
 
-        self.effective_labels.union(
+        self.effective_labels.update(
             *(pull_request.effective_labels() for pull_request in self.pull_requests)
         )
         self.category = ChangeCategory.resolve_from_labels(self.effective_labels)
@@ -170,6 +171,10 @@ class ChangeBlock:
             f"- {change.as_markdown()}" for change in self.changes
         )
 
+    def has_changes(self) -> bool:
+        """Returns whether the change block has changes."""
+        return bool(self.changes)
+
 
 class Changelog:
     """This class represents a changelog for a specific version.
@@ -177,24 +182,65 @@ class Changelog:
     Args:
         version (:obj:`Version`): The version of the changelog.
         date (:obj:`datetime.date`, optional): The release date of the version. Defaults to today.
+
+    Attributes:
+        changes (:obj:`set` of :class:`Change`, optional): The changes of the version.
+        change_blocks (Dict[:obj:`ChangeCategory`: :class:`ChangeBlock`]): The change blocks of
+            the changelog. Will be set by :meth:`update_changes_from_pull_requests`.
     """
 
     def __init__(self, version: Version, date: datetime.date | None = None) -> None:
         self.version: Version = version
         self.date = date or datetime.date.today()
+        self.changes: set[Change] = set()
         self.change_blocks: dict[ChangeCategory, ChangeBlock] = {
-            category: ChangeBlock(category) for category in ChangeCategory
+            category: ChangeBlock(title=category) for category in ChangeCategory
         }
 
-    def add_change(self, category: ChangeCategory, change: Change) -> None:
-        """Adds a change to the changelog.
+    def add_change(self, change: Change) -> None:
+        """Adds a change to the backlog.
 
         Args:
-            category (:obj:`ChangeCategory`): The category of the change.
             change (:class:`Change`): The change to add.
 
         """
-        self.change_blocks[category].add_change(change)
+        self.changes.add(change)
+
+    def add_changes(self, changes: Iterable[Change]) -> None:
+        """Adds multiple changes to the backlog.
+
+        Args:
+            changes (Iterable[:class:`Change`]): The changes to add.
+        """
+        self.changes.update(changes)
+
+    def add_changes_from_commits(self, commits: Iterable[Commit]) -> None:
+        """Adds multiple changes from commits to the backlog.
+
+        Args:
+            commits (Iterable[:class:`Commit]): The commits to add as changes.
+        """
+        self.add_changes(Change(commit.messageHeadline) for commit in commits)
+
+    def get_all_thread_numbers(self) -> set[int]:
+        """Returns all thread numbers of the changes in the changelog."""
+        return set().union(*(chang.thread_numbers for chang in self.changes))
+
+    def update_changes_from_pull_requests(
+        self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
+    ) -> None:
+        """Calls :meth:`Change.update_from_pull_requests` for all changes.
+        Additionally, it updates :attr:`change_blocks` with the changes.
+
+        Args:
+            github_threads (Dict[:obj:`int`: :class:`PullRequest` | :class:`Issue`]):
+                A mapping of thread numbers to pull requests or issues.
+            ptb_devs (:obj:`Collection` of :obj:`User`): The PTB developers. These will not be
+                mentioned in the changes.
+        """
+        for change in self.changes:
+            change.update_from_pull_requests(github_threads, ptb_devs)
+            self.change_blocks[change.category].add_change(change)
 
     def as_markdown(
         self,
@@ -206,5 +252,7 @@ class Changelog:
             f"release notes can be found in the news channel [@pythontelegrambotchannel]("
             f"https://t.me/pythontelegrambotchannel)."
         )
-        changes = "\n\n".join(block.as_markdown() for block in self.change_blocks.values())
+        changes = "\n\n".join(
+            block.as_markdown() for block in self.change_blocks.values() if block.has_changes()
+        )
         return header + "\n\n" + changes
