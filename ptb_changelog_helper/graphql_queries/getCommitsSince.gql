@@ -5,6 +5,7 @@ query getCommitSince($date: GitTimestamp!, $after: String = null) {
                 history(first: 100, since: $date, after: $after) {
                     nodes {
                         messageHeadline
+                        messageBody
                     }
                     pageInfo {
                         hasNextPage

@@ -220,7 +220,7 @@ class Changelog:
         Args:
             commits (Iterable[:class:`Commit]): The commits to add as changes.
         """
-        self.add_changes(Change(commit.messageHeadline) for commit in commits)
+        self.add_changes(Change(commit.effective_text()) for commit in commits)
 
     def get_all_thread_numbers(self) -> set[int]:
         """Returns all thread numbers of the changes in the changelog."""

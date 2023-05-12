@@ -258,9 +258,18 @@ class Commit(BaseModel):
 
     Attributes:
         messageHeadline (:obj:`str`): The headline of the commit message.
+        messageBody (:obj:`str`): The body of the commit message.
     """
 
     messageHeadline: str
+    messageBody: str
+
+    def effective_text(self) -> str:
+        """Return the effective text of the commit, i.e. combines the headline with the
+        relevant part of the body, if the headline is truncated."""
+        if self.messageHeadline.endswith("…"):
+            return self.messageHeadline[:-1] + self.messageBody.split("\n")[0].strip("…")
+        return self.messageHeadline
 
 
 class CommitHistoryConnection(_Connection):
