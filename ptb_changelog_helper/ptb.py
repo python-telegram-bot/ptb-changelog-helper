@@ -1,11 +1,13 @@
 """This module contains functionality for automatically updating the changelog and version
 in the configured PTB repository.
 """
-
+import logging
 import re
 from pathlib import Path
 
 from ptb_changelog_helper.version import Version
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def update_version(ptb_dir: Path, new_version: Version) -> None:
@@ -15,6 +17,7 @@ def update_version(ptb_dir: Path, new_version: Version) -> None:
         ptb_dir (:obj:`Path`): The path to the PTB repository.
         new_version (:class:`Version`): The new version.
     """
+    _LOGGER.info("Updating version in PTB repository.")
     version_file = ptb_dir / "telegram" / "_version.py"
     text = version_file.read_text(encoding="utf-8")
     # replacing the quotes for black
@@ -34,6 +37,7 @@ def update_changelog(ptb_dir: Path, changelog: str) -> None:
         ptb_dir (:obj:`Path`): The path to the PTB repository.
         changelog (:obj:`str`): The changelog to insert.
     """
+    _LOGGER.info("Updating changelog in PTB repository.")
     changelog_file = ptb_dir / "CHANGES.rst"
     text = changelog_file.read_text(encoding="utf-8")
     text = re.sub(

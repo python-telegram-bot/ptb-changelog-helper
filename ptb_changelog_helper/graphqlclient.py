@@ -1,4 +1,5 @@
 """This module contains a GraphQL client for GitHub's API."""
+import logging
 from collections.abc import Collection
 from pathlib import Path
 from typing import Any, overload
@@ -9,6 +10,8 @@ from gql.transport.aiohttp import AIOHTTPTransport
 
 from ptb_changelog_helper import githubtypes
 from ptb_changelog_helper.const import USER_AGENT
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class GraphQLClient:
@@ -39,10 +42,12 @@ class GraphQLClient:
     async def initialize(self) -> None:
         """Initialize the client and connect to the server."""
         await self._transport.connect()
+        _LOGGER.debug("Connected to GraphQL server.")
 
     async def shutdown(self) -> None:
         """Shutdown the client and disconnect from the server."""
         await self._transport.close()
+        _LOGGER.debug("Disconnected from GraphQL server.")
 
     def _get_query_text(self, query_name: str) -> str:
         return (self._query_path / f"{query_name}.gql").read_text(encoding="utf-8")
@@ -68,8 +73,14 @@ class GraphQLClient:
     ) -> dict[str, Any]:
         if query_name is None and query is None:
             raise ValueError("Either query_name or query must be specified")
+        effective_query = query or self._get_query_text(query_name)  # type: ignore[arg-type]
+        _LOGGER.debug(
+            "Executing GraphQL query:\n\n%s\n\n with variables %s",
+            effective_query,
+            variable_values,
+        )
         return await self._session.execute(
-            gql(query or self._get_query_text(query_name)),  # type: ignore[arg-type]
+            gql(effective_query),
             variable_values=variable_values,
         )
 
@@ -85,6 +96,7 @@ class GraphQLClient:
             consider. The ``pageInfo`` is returned however, such that the missing items can be
             retrieved. A future version of this library may handle this automatically.
         """
+        _LOGGER.debug("Getting threads %s", numbers)
         insertion = "\n".join(
             self._get_thread_insertion.replace("<NUMBER>", str(number)) for number in numbers
         )
@@ -104,17 +116,20 @@ class GraphQLClient:
 
     async def get_ptb_devs(self) -> tuple[githubtypes.User, ...]:
         """Get all PTB developers on the PTB organization."""
+        _LOGGER.debug("Getting PTB devs")
         result = await self._do_request(query_name="getPTBDevs")
         organization = githubtypes.Organization(**result["organization"])
         return organization.membersWithRole.nodes or ()
 
     async def get_last_release_tag(self) -> githubtypes.Tag:
         """Get the last release tag of PTB."""
+        _LOGGER.debug("Getting last release tag")
         result = await self._do_request(query_name="getLastRelease")
         return githubtypes.Tag(**result["repository"]["releases"]["edges"][0]["node"])
 
     async def get_commits_since(self, date: str) -> tuple[githubtypes.Commit, ...]:
         """Get all commits since the given date."""
+        _LOGGER.debug("Getting commits since %s", date)
         result = await self._do_request(
             query_name="getCommitsSince", variable_values={"date": date}
         )

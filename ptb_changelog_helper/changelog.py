@@ -1,6 +1,7 @@
 """This module contains a class based changelog generator for Python Telegram Bot."""
 import asyncio
 import datetime
+import logging
 from collections.abc import Collection, Iterable
 from enum import StrEnum
 
@@ -8,6 +9,8 @@ from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
 from ptb_changelog_helper.graphqlclient import GraphQLClient
 from ptb_changelog_helper.version import Version
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class ChangeCategory(StrEnum):
@@ -47,7 +50,11 @@ class ChangeCategory(StrEnum):
         for source_label, category in mapping.items():
             for label in label_names:
                 if source_label == label:
+                    _LOGGER.debug("Resolved category %s from label %s", category, label)
                     return category
+        _LOGGER.debug(
+            "Could not resolve category from labels %s. Returning %s.", label_names, cls.MAJOR
+        )
         return cls.MAJOR
 
 
@@ -245,14 +252,20 @@ class Changelog:
         """
         changelog = cls(version=version)
 
+        _LOGGER.info("Fetching commits since last release.")
         commits = await graphql_client.get_commits_since_last_release()
+        _LOGGER.info("Found %d commits.", len(commits))
         changelog.add_changes_from_commits(commits)
 
         thread_numbers = changelog.get_all_thread_numbers()
 
+        _LOGGER.info("Fetching pull requests, issues and ptb devs.")
         threads, ptb_devs = await asyncio.gather(
             graphql_client.get_threads(thread_numbers), graphql_client.get_ptb_devs()
         )
+        _LOGGER.info("Found %d pull requests and issues.", len(threads))
+        _LOGGER.info("Found the following PTB devs: %s.", ptb_devs)
 
+        _LOGGER.info("Inserting fetched information into changelog.")
         changelog.update_changes_from_pull_requests(threads, ptb_devs)
         return changelog

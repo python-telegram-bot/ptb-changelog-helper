@@ -1,11 +1,12 @@
 """This module contains a Pandoc filter for converting to Telegram's HTML format."""
-
+import logging
 import re
 from pydoc import Doc
 
 from panflute import BulletList, Element, Header, Link, Para, Plain, Str, Strong, run_filter
 
 LINE_BREAK = Str("\n")
+_LOGGER = logging.getLogger(__name__)
 
 
 def _build_pr_link(number: str | int) -> str:
@@ -29,16 +30,20 @@ def action(
     if isinstance(element, Str) and (
         match := re.match(pattern=r"\((\#(\d+))\)", string=element.text)
     ):
+        _LOGGER.debug("Found PR link: %s. Inserting link to GitHub thread", match.group(1))
         return [
             Str("("),
             Link(Str(match.group(1)), url=_build_pr_link(match.group(2))),
             Str(")"),
         ]
     if isinstance(element, Header):
+        _LOGGER.debug("Converting header to bold.")
         return Plain(Strong(*element.content))
     if isinstance(element, Para):
+        _LOGGER.debug("Adding line breaks around paragraph.")
         return Plain(LINE_BREAK, *element.content, LINE_BREAK)
     if isinstance(element, BulletList):
+        _LOGGER.debug("Converting bullet list to Telegram format.")
         # BulletList contains a list of LineItem
         # Each of those contains a Plain element (at least in our use case)
         lines = [e.content[0] for e in element.content]
