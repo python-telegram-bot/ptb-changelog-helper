@@ -46,3 +46,21 @@ def update_changelog(ptb_dir: Path, changelog: str) -> None:
         string=text,
     )
     changelog_file.write_text(text, encoding="utf-8")
+
+
+def insert_next_version(ptb_dir: Path, next_version: Version) -> None:
+    """Replaces "NEXT.VERSION" with the new version in the docs of the PTB repository.
+
+    Args:
+        ptb_dir (:obj:`Path`): The path to the PTB repository.
+        next_version (:class:`Version`): The new version.
+    """
+    _LOGGER.info("Replacing 'NEXT.VERSION' in PTB repository.")
+    for extension in ("py", "rst", "md"):
+        for file in ptb_dir.rglob(f"*.{extension}"):
+            if file.name == "CONTRIBUTING.rst":
+                continue
+
+            text = file.read_text(encoding="utf-8")
+            text = text.replace("NEXT.VERSION", str(next_version))
+            file.write_text(text, encoding="utf-8")

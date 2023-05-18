@@ -1,4 +1,5 @@
 """This module contains a GraphQL client for GitHub's API."""
+import datetime
 import logging
 from collections.abc import Collection
 from pathlib import Path
@@ -166,4 +167,7 @@ class GraphQLClient:
     async def get_commits_since_last_release(self) -> tuple[githubtypes.Commit, ...]:
         """Get all commits since the last release."""
         last_release_tag = await self.get_last_release_tag()
-        return await self.get_commits_since(last_release_tag.createdAt)
+        dtm = datetime.datetime.fromisoformat(last_release_tag.createdAt) + datetime.timedelta(
+            seconds=1
+        )
+        return await self.get_commits_since(dtm.isoformat())

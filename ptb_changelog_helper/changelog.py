@@ -6,6 +6,7 @@ import pickle
 from collections.abc import Collection, Iterable
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
@@ -227,14 +228,23 @@ class Changelog:
 
     def as_markdown(
         self,
+        target: Literal["docs", "channel"],
     ) -> str:
         """Returns the changelog as markdown."""
-        header = f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
-        header += (
-            f"This is the technical changelog for version {self.version}. More elaborate "
-            f"release notes can be found in the news channel [@pythontelegrambotchannel]("
-            f"https://t.me/pythontelegrambotchannel)."
-        )
+        if target == "docs":
+            header = (
+                f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
+                f"This is the technical changelog for version {self.version}. More elaborate "
+                f"release notes can be found in the news channel [@pythontelegrambotchannel]("
+                f"https://t.me/pythontelegrambotchannel)."
+            )
+        else:
+            header = (
+                f"**We've just released v{self.version}.**\n\n"
+                "Thank you to everyone who contributed to this release.\n\n"
+                "As usual, upgrade using `pip install -U python-telegram-bot`."
+            )
+
         changes = "\n\n".join(
             block.as_markdown() for block in self.change_blocks.values() if block.has_changes()
         )
@@ -257,7 +267,7 @@ class Changelog:
         changelog = cls(version=version)
 
         _LOGGER.info("Fetching commits since last release.")
-        commits = await graphql_client.get_commits_since(date="2023-04-14T23:34:30")
+        commits = await graphql_client.get_commits_since_last_release()
         _LOGGER.info("Found %d commits.", len(commits))
         changelog.add_changes_from_commits(commits)
 

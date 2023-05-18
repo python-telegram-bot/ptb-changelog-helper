@@ -8,3 +8,4 @@
 foo.py
 changelog.*
 *.pickle
+/output/
