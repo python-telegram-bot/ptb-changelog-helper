@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _get_filter_path(output_format: Literal["rst", "html"]) -> Path:
-    return Path(__file__).parent.parent / f"{output_format}_filter.py"
+    return Path(__file__).parent / "panflute_filters" / f"{output_format}_filter.py"
 
 
 def _run_pandoc(
@@ -34,8 +34,7 @@ def _run_pandoc(
         str(filter_path.absolute().resolve()),
         str(input_file.absolute().resolve()),
     ]
-    with subprocess.Popen(args, cwd=Path.cwd().absolute().resolve()) as popen:
-        popen.wait()
+    subprocess.run(args, check=True)
 
 
 def convert_to_rst(input_file: Path, output_file: Path, thread_storage_path: Path) -> None:

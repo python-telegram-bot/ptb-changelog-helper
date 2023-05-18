@@ -1,12 +1,21 @@
 """This module contains a Pandoc filter for converting to Sphinx's reStructuredText format."""
 import pickle
 import re
+import sys
 from pathlib import Path
 
 from panflute import Doc, Element, MetaMap, RawInline, Str, run_filter
 
-from ptb_changelog_helper import githubtypes
-from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, PANDOC_METADATA_KEY
+try:
+    from ptb_changelog_helper import githubtypes
+    from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, PANDOC_METADATA_KEY
+except ImportError:
+    # A small hack to get imports working while running this file as pandoc filter without
+    # having to keep this file in the root directory
+    sys.path.append(str(Path(__file__).parent.parent.parent.absolute().resolve()))
+
+    from ptb_changelog_helper import githubtypes
+    from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, PANDOC_METADATA_KEY
 
 GH_THREADS: dict[int, githubtypes.PullRequest | githubtypes.Issue] = {}
 
