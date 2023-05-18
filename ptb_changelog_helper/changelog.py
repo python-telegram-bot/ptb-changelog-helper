@@ -3,38 +3,11 @@ import asyncio
 import datetime
 from collections.abc import Collection, Iterable
 from enum import StrEnum
-from typing import NamedTuple
 
 from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
 from ptb_changelog_helper.graphqlclient import GraphQLClient
-
-
-class Version(NamedTuple):
-    """This class is basically copied from PTB. We don't import it, because it's private and
-    we want to rely only on the public API."""
-
-    major: int
-    minor: int
-    micro: int
-    releaselevel: str  # Literal['alpha', 'beta', 'candidate', 'final']
-    serial: int
-
-    def _rl_shorthand(self) -> str:
-        return {
-            "alpha": "a",
-            "beta": "b",
-            "candidate": "rc",
-        }[self.releaselevel]
-
-    def __str__(self) -> str:
-        version = f"{self.major}.{self.minor}"
-        if self.micro != 0:
-            version = f"{version}.{self.micro}"
-        if self.releaselevel != "final":
-            version = f"{version}{self._rl_shorthand()}{self.serial}"
-
-        return version
+from ptb_changelog_helper.version import Version
 
 
 class ChangeCategory(StrEnum):
