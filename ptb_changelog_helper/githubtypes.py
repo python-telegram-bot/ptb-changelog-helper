@@ -178,9 +178,7 @@ class PullRequest(BaseModel):
                 :attr:`PRE_COMMIT_CI_USER` are always excluded.
         """
         exclude_users = set(exclude_users)
-        exclude_users.update(
-            {DEPENDABOT_USER, PRE_COMMIT_CI_USER}  # pylint: disable=unhashable-member
-        )
+        exclude_users.update({DEPENDABOT_USER, PRE_COMMIT_CI_USER})
 
         md_str = f"#{self.number}"
 
@@ -189,7 +187,6 @@ class PullRequest(BaseModel):
 
         if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
             nodes = self.closingIssuesReferences.nodes
-            print(nodes)
             md_str += " closes "
             if len(nodes) == 1:
                 md_str += f"#{nodes[0].number}"

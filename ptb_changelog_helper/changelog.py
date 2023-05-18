@@ -2,8 +2,10 @@
 import asyncio
 import datetime
 import logging
+import pickle
 from collections.abc import Collection, Iterable
 from enum import StrEnum
+from pathlib import Path
 
 from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
@@ -81,7 +83,7 @@ class Change:
     ):
         self.text: str = text
         self.thread_numbers: set[int] = {
-            int(match.group(1)) for match in GITHUB_THREAD_PATTERN.finditer(self.text)
+            int(match.group(2)) for match in GITHUB_THREAD_PATTERN.finditer(self.text)
         }
         self.category: ChangeCategory = ChangeCategory.MAJOR
         self.pull_requests: set[PullRequest] = set()
@@ -240,7 +242,7 @@ class Changelog:
 
     @classmethod
     async def build_for_version(
-        cls, version: Version, graphql_client: GraphQLClient
+        cls, version: Version, graphql_client: GraphQLClient, store_threads: Path | None = None
     ) -> "Changelog":
         """Builds a changelog for a specific version.
 
@@ -248,12 +250,14 @@ class Changelog:
             version (:class:`Version`): The version of the changelog.
             graphql_client (:class:`GraphQLClient`): The GraphQL client to use for fetching the
                 data from GitHub.
+            store_threads (:obj:`Path`, optional): A path to a file where the threads will be
+                stored as pickle file. Defaults to ``None``.
 
         """
         changelog = cls(version=version)
 
         _LOGGER.info("Fetching commits since last release.")
-        commits = await graphql_client.get_commits_since_last_release()
+        commits = await graphql_client.get_commits_since(date="2023-04-14T23:34:30")
         _LOGGER.info("Found %d commits.", len(commits))
         changelog.add_changes_from_commits(commits)
 
@@ -268,4 +272,10 @@ class Changelog:
 
         _LOGGER.info("Inserting fetched information into changelog.")
         changelog.update_changes_from_pull_requests(threads, ptb_devs)
+
+        if store_threads:
+            _LOGGER.info("Storing threads in %s.", store_threads)
+            with store_threads.open("wb") as file:
+                pickle.dump(threads, file)
+
         return changelog

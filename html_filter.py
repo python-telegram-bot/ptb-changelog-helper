@@ -1,6 +1,7 @@
 """This module contains a Pandoc filter for converting to Telegram's HTML format."""
-import logging
+import pickle
 import re
+from pathlib import Path
 from pydoc import Doc
 
 from panflute import (
@@ -10,6 +11,7 @@ from panflute import (
     Element,
     Header,
     Link,
+    MetaMap,
     Para,
     Plain,
     Str,
@@ -17,13 +19,35 @@ from panflute import (
     run_filter,
 )
 
+from ptb_changelog_helper import githubtypes
+from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, PANDOC_METADATA_KEY
+
 LINE_BREAK = Str("\n")
-_LOGGER = logging.getLogger(__name__)
+
+GH_THREADS: dict[int, githubtypes.PullRequest | githubtypes.Issue] = {}
 
 
-def _build_pr_link(number: str | int) -> str:
-    """Given a PR number, builds a link to a PR on GitHub."""
+def _get_gh_threads(file_path: Path) -> None:
+    with file_path.open("rb") as file_:
+        GH_THREADS.update(pickle.load(file_))
+
+
+def _build_pr_link(number: int) -> str:
     return f"https://github.com/python-telegram-bot/python-telegram-bot/pull/{number}"
+
+
+def _build_issue_link(number: int) -> str:
+    return f"https://github.com/python-telegram-bot/python-telegram-bot/issue/{number}"
+
+
+def _build_link(number: str | int) -> str:
+    """Given a PR number, builds a link to a PR on GitHub."""
+    effective_number = int(number)
+    if not GH_THREADS:
+        return _build_issue_link(effective_number)
+    if (thread := GH_THREADS[effective_number]) and isinstance(thread, githubtypes.PullRequest):
+        return _build_pr_link(effective_number)
+    return _build_issue_link(effective_number)
 
 
 def action(  # pylint: disable=too-many-return-statements  # noqa: PLR0911
@@ -39,23 +63,22 @@ def action(  # pylint: disable=too-many-return-statements  # noqa: PLR0911
     * Convert bullet lists to Telegram's format
 
     """
+    if isinstance(element, MetaMap):
+        _get_gh_threads(Path(element.content[PANDOC_METADATA_KEY].text))
     if isinstance(element, Str) and (
-        match := re.match(pattern=r"\((\#(\d+))\)", string=element.text)
+        match := re.search(pattern=GITHUB_THREAD_PATTERN, string=element.text)
     ):
-        _LOGGER.debug("Found PR link: %s. Inserting link to GitHub thread", match.group(1))
+        pre, post = element.text.split(match.group(1))
         return [
-            Str("("),
-            Link(Str(match.group(1)), url=_build_pr_link(match.group(2))),
-            Str(")"),
+            Str(pre),
+            Link(Str(match.group(1)), url=_build_link(match.group(2))),
+            Str(post),
         ]
     if isinstance(element, Header):
-        _LOGGER.debug("Converting header to bold.")
         return Plain(LINE_BREAK, Strong(*element.content), LINE_BREAK)
     if isinstance(element, Para):
-        _LOGGER.debug("Adding line breaks around paragraph.")
         return Plain(*element.content)
     if isinstance(element, BulletList):
-        _LOGGER.debug("Converting bullet list to Telegram format.")
         # BulletList contains a list of LineItem
         # Each of those contains a Plain element (at least in our use case)
         lines = [e.content[0] for e in element.content]

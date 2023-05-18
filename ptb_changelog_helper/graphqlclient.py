@@ -89,6 +89,8 @@ class GraphQLClient:
         numbers: Collection[int],
     ) -> dict[int, githubtypes.PullRequest | githubtypes.Issue]:
         """Get specified threads (issues/prs) on the PTB repository.
+        Issues linked to the requested PRs will also be directly available in
+        the returned dictionary.
 
         Warning:
             Currently, if they have more than 100 associated labels or issues, only the first 100
@@ -112,6 +114,13 @@ class GraphQLClient:
                 cls = getattr(githubtypes, entry["__typename"])
                 obj = cls(**entry)
                 by_number[obj.number] = obj
+                if (
+                    isinstance(obj, githubtypes.PullRequest)
+                    and obj.closingIssuesReferences
+                    and obj.closingIssuesReferences.nodes
+                ):
+                    for issue in obj.closingIssuesReferences.nodes:
+                        by_number[issue.number] = issue
         return by_number
 
     async def get_ptb_devs(self) -> tuple[githubtypes.User, ...]:

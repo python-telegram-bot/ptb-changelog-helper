@@ -6,4 +6,4 @@
 /.idea/
 **/graphql.config.yml
 foo.py
-changelog.md
+changelog.*
