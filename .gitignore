@@ -9,3 +9,4 @@ foo.py
 changelog.*
 *.pickle
 /output/
+main.py
