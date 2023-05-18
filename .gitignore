@@ -7,3 +7,4 @@
 **/graphql.config.yml
 foo.py
 changelog.*
+*.pickle
