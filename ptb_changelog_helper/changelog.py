@@ -227,7 +227,7 @@ class Changelog:
         self,
     ) -> str:
         """Returns the changelog as markdown."""
-        header = f"# Version {self.version}\n*Released {self.date.isoformat()}\n\n"
+        header = f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
         header += (
             f"This is the technical changelog for version {self.version}. More elaborate "
             f"release notes can be found in the news channel [@pythontelegrambotchannel]("

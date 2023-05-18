@@ -3,7 +3,19 @@ import logging
 import re
 from pydoc import Doc
 
-from panflute import BulletList, Element, Header, Link, Para, Plain, Str, Strong, run_filter
+from panflute import (
+    BulletList,
+    Citation,
+    Cite,
+    Element,
+    Header,
+    Link,
+    Para,
+    Plain,
+    Str,
+    Strong,
+    run_filter,
+)
 
 LINE_BREAK = Str("\n")
 _LOGGER = logging.getLogger(__name__)
@@ -14,7 +26,7 @@ def _build_pr_link(number: str | int) -> str:
     return f"https://github.com/python-telegram-bot/python-telegram-bot/pull/{number}"
 
 
-def action(
+def action(  # pylint: disable=too-many-return-statements  # noqa: PLR0911
     element: Element, document: Doc | None  # pylint: disable=unused-argument
 ) -> Element | list[Element] | None:
     """Pandoc filter for converting to Telegram's HTML format.
@@ -38,10 +50,10 @@ def action(
         ]
     if isinstance(element, Header):
         _LOGGER.debug("Converting header to bold.")
-        return Plain(Strong(*element.content))
+        return Plain(LINE_BREAK, Strong(*element.content), LINE_BREAK)
     if isinstance(element, Para):
         _LOGGER.debug("Adding line breaks around paragraph.")
-        return Plain(LINE_BREAK, *element.content, LINE_BREAK)
+        return Plain(*element.content)
     if isinstance(element, BulletList):
         _LOGGER.debug("Converting bullet list to Telegram format.")
         # BulletList contains a list of LineItem
@@ -49,7 +61,11 @@ def action(
         lines = [e.content[0] for e in element.content]
         for line in lines:
             line.content.insert(0, Str("• "))
-        return [Plain(LINE_BREAK), *lines, Plain(LINE_BREAK)]
+        return lines
+    if isinstance(element, Citation):
+        return None
+    if isinstance(element, Cite):
+        return element.content[0]
     return element
 
 
