@@ -1,0 +1,16 @@
+{
+    organization(login: "python-telegram-bot") {
+        membersWithRole(first: 100) {
+            nodes {
+                login
+                url
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                __typename
+            }
+        }
+    }
+}

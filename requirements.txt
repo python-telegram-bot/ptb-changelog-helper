@@ -1,2 +1,4 @@
-PyGithub
-python-telegram-bot
+python-telegram-bot~=20.0
+panflute~=2.3.0
+gql[aiohttp]~=3.4.0
+pydantic~=1.10.0

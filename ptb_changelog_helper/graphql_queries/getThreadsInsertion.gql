@@ -1,0 +1,4 @@
+        pr<NUMBER>: issueOrPullRequest(number: <NUMBER>) {
+            ... issueFragment
+            ... prFragment
+        }

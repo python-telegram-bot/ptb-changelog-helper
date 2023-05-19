@@ -1,0 +1,65 @@
+{
+    repository(owner: "python-telegram-bot", name: "python-telegram-bot") {
+        <INSERTION>
+    }
+}
+
+fragment pageInfoFragment on PageInfo {
+    hasNextPage
+    endCursor
+    __typename
+}
+
+fragment labelFragment on Label {
+    name
+    description
+    __typename
+}
+
+fragment labelConnectionFragment on LabelConnection {
+    nodes {
+        ... labelFragment
+    }
+    pageInfo {
+        ... pageInfoFragment
+    }
+    __typename
+}
+
+fragment authorFragment on Actor {
+    login
+    url
+    __typename
+}
+
+fragment prFragment on PullRequest {
+    number
+    url
+    author {
+        ... authorFragment
+    }
+    closingIssuesReferences(first: 100) {
+        pageInfo {
+        ... pageInfoFragment
+        }
+        nodes {
+            ... issueFragment
+        }
+    }
+    labels(after: "") {
+        ...labelConnectionFragment
+    }
+    __typename
+}
+
+fragment issueFragment on Issue {
+    number
+    url
+    labels(after: "") {
+        ...labelConnectionFragment
+    }
+    author {
+        ... authorFragment
+    }
+    __typename
+}
