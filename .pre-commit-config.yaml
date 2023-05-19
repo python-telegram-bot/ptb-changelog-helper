@@ -27,20 +27,20 @@ repos:
           - --jobs=0
 
         additional_dependencies:
-          - python-telegram-bot~=20.0
+          - python-telegram-bot~=20.3
           - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.0
-          - pydantic~=1.10.0
+          - gql[aiohttp]~=3.4.1
+          - pydantic~=1.10.7
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.2.0
     hooks:
     -   id: mypy
         name: mypy
         additional_dependencies:
-          - python-telegram-bot~=20.0
+          - python-telegram-bot~=20.3
           - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.0
-          - pydantic~=1.10.0
+          - gql[aiohttp]~=3.4.1
+          - pydantic~=1.10.7
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.3.2
     hooks:
@@ -61,7 +61,7 @@ repos:
     -   id: ruff
         name: ruff
         additional_dependencies:
-          - python-telegram-bot~=20.0
+          - python-telegram-bot~=20.3
           - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.0
-          - pydantic~=1.10.0
+          - gql[aiohttp]~=3.4.1
+          - pydantic~=1.10.7
