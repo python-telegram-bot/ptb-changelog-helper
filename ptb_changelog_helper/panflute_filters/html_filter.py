@@ -46,7 +46,7 @@ def _build_pr_link(number: int) -> str:
 
 
 def _build_issue_link(number: int) -> str:
-    return f"https://github.com/python-telegram-bot/python-telegram-bot/issue/{number}"
+    return f"https://github.com/python-telegram-bot/python-telegram-bot/issues/{number}"
 
 
 def _build_link(number: str | int) -> str:
