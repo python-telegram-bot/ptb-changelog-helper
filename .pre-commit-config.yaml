@@ -28,9 +28,9 @@ repos:
 
         additional_dependencies:
           - python-telegram-bot~=20.5
-          - panflute~=2.3.0
+          - panflute~=2.4.2
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.3.0
+          - pydantic~=2.4.2
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.4.1
     hooks:
@@ -38,9 +38,9 @@ repos:
         name: mypy
         additional_dependencies:
           - python-telegram-bot~=20.5
-          - panflute~=2.3.0
+          - panflute~=2.4.2
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.3.0
+          - pydantic~=2.4.2
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.10.1
     hooks:
@@ -62,6 +62,6 @@ repos:
         name: ruff
         additional_dependencies:
           - python-telegram-bot~=20.5
-          - panflute~=2.3.0
+          - panflute~=2.4.2
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.3.0
+          - pydantic~=2.4.2
