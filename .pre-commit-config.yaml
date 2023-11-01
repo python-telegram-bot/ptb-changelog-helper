@@ -27,7 +27,7 @@ repos:
           - --jobs=0
 
         additional_dependencies:
-          - python-telegram-bot~=20.5
+          - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
           - pydantic~=2.4.2
@@ -37,7 +37,7 @@ repos:
     -   id: mypy
         name: mypy
         additional_dependencies:
-          - python-telegram-bot~=20.5
+          - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
           - pydantic~=2.4.2
@@ -61,7 +61,7 @@ repos:
     -   id: ruff
         name: ruff
         additional_dependencies:
-          - python-telegram-bot~=20.5
+          - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
           - pydantic~=2.4.2
