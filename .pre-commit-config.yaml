@@ -30,7 +30,7 @@ repos:
           - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.4.2
+          - pydantic~=2.5.2
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.4.1
     hooks:
@@ -40,7 +40,7 @@ repos:
           - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.4.2
+          - pydantic~=2.5.2
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.10.1
     hooks:
@@ -64,4 +64,4 @@ repos:
           - python-telegram-bot~=20.6
           - panflute~=2.3.0
           - gql[aiohttp]~=3.4.1
-          - pydantic~=2.4.2
+          - pydantic~=2.5.2
