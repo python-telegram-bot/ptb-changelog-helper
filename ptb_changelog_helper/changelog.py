@@ -1,4 +1,5 @@
 """This module contains a class based changelog generator for Python Telegram Bot."""
+
 import asyncio
 import datetime
 import logging

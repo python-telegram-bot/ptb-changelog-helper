@@ -1,4 +1,5 @@
 """Constants for ptb_changelog_helper."""
+
 import re
 from typing import Final
 

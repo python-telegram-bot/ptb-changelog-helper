@@ -1,4 +1,5 @@
 """This module contains a class that represents a version number."""
+
 from typing import Literal, NamedTuple
 
 

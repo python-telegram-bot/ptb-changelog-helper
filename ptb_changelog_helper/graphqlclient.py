@@ -1,4 +1,5 @@
 """This module contains a GraphQL client for GitHub's API."""
+
 import datetime
 import logging
 from collections.abc import Collection
@@ -56,14 +57,12 @@ class GraphQLClient:
     @overload
     async def _do_request(
         self, *, query: str | None = None, variable_values: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
     @overload
     async def _do_request(
         self, *, query_name: str | None = None, variable_values: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
     async def _do_request(
         self,

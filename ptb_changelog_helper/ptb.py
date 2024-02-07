@@ -1,6 +1,7 @@
 """This module contains functionality for automatically updating the changelog and version
 in the configured PTB repository.
 """
+
 import logging
 import re
 from pathlib import Path

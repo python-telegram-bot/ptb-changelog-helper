@@ -1,4 +1,5 @@
 """This module contains functionality for converting the MD Changlelog to RST and TG HTML."""
+
 import logging
 import subprocess
 from pathlib import Path

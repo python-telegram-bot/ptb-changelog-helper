@@ -1,4 +1,5 @@
 """This moudle contains the main entry point for the PTB changelog helper."""
+
 import logging
 from pathlib import Path
 

@@ -1,4 +1,6 @@
+# pylint: disable=duplicate-code
 """This module contains a Pandoc filter for converting to Telegram's HTML format."""
+
 import pickle
 import re
 import sys
