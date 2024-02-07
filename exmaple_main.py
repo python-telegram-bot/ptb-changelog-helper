@@ -2,6 +2,7 @@
 
 Please fill in your credentials below before running this script.
 """
+
 import asyncio
 import logging
 from pathlib import Path
