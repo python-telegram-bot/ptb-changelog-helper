@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """This module contains a Pandoc filter for converting to Sphinx's reStructuredText format."""
 import pickle
 import re

@@ -1,4 +1,5 @@
 """This module contains functionality for sending a HTML message to a Telegram chat."""
+
 import logging
 from pathlib import Path
 
