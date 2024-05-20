@@ -1,6 +1,5 @@
 """This module contains a class based changelog generator for Python Telegram Bot."""
 
-import asyncio
 import datetime
 import logging
 from collections.abc import Collection, Iterable
@@ -9,7 +8,11 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
-from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, MD_MONO_PATTERN
+from ptb_changelog_helper.const import (
+    GITHUB_THREAD_PATTERN,
+    GITHUB_THREADS_PATTERN,
+    MD_MONO_PATTERN,
+)
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
 from ptb_changelog_helper.graphqlclient import GraphQLClient
 from ptb_changelog_helper.version import Version
@@ -90,10 +93,9 @@ class Change(BaseModel):
         self.thread_numbers: set[int] = {
             int(match.group(2)) for match in GITHUB_THREAD_PATTERN.finditer(self.text)
         }
+        self.text = GITHUB_THREADS_PATTERN.sub("", self.text)
 
-    def update_from_pull_requests(
-        self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
-    ) -> None:
+    def update_from_pull_requests(self, github_threads: dict[int, PullRequest | Issue]) -> None:
         """Extracts the pull requests of the change and stores them to :attr:`pull_requests`.
         Also
 
@@ -106,8 +108,6 @@ class Change(BaseModel):
         Args:
             github_threads (Dict[:obj:`int`: :class:`PullRequest` | :class:`Issue`]):
                 A mapping of thread numbers to pull requests or issues.
-            ptb_devs (:obj:`Collection` of :obj:`User`): The PTB developers. These will not be
-                mentioned in the change.
         """
         self.pull_requests = {
             thread
@@ -115,32 +115,27 @@ class Change(BaseModel):
             if isinstance(thread := github_threads[thread_number], PullRequest)
         }
 
-        for pull_request in self.pull_requests:
-            self.text = self.text.replace(
-                f"#{pull_request.number}", pull_request.as_md(exclude_users=ptb_devs)
-            )
-
         self.effective_labels.update(
             *(pull_request.effective_labels() for pull_request in self.pull_requests)
         )
         self.category = ChangeCategory.resolve_from_labels(self.effective_labels)
 
-    def as_md(self) -> str:
+    def as_md(self, exclude_users: Collection[User]) -> str:
         """Returns the change as markdown including information about the associated pull requests
         and issues."""
-        return f"{self.text} ({', '.join(pr.as_md() for pr in self.pull_requests)})"
+        return f"{self.text} ({', '.join(pr.as_md(exclude_users) for pr in self.pull_requests)})"
 
-    def as_html(self) -> str:
+    def as_html(self, exclude_users: Collection[User]) -> str:
         """Returns the change as HTML including information about the associated pull requests
         and issues."""
         text = MD_MONO_PATTERN.sub(r"<code>\1</code>", self.text)
-        return f"{text} ({', '.join(pr.as_html() for pr in self.pull_requests)})"
+        return f"{text} ({', '.join(pr.as_html(exclude_users) for pr in self.pull_requests)})"
 
-    def as_rst(self) -> str:
+    def as_rst(self, exclude_users: Collection[User]) -> str:
         """Returns the change as reStructuredText including information about the associated pull
         requests and issues."""
         text = MD_MONO_PATTERN.sub(r"``\1``", self.text)
-        return f"{text} ({', '.join(pr.as_rst() for pr in self.pull_requests)})"
+        return f"{text} ({', '.join(pr.as_rst(exclude_users) for pr in self.pull_requests)})"
 
 
 class ChangeBlock(BaseModel):
@@ -166,19 +161,23 @@ class ChangeBlock(BaseModel):
         """Returns whether the change block has changes."""
         return bool(self.changes)
 
-    def as_md(self) -> str:
+    def as_md(self, exclude_users: Collection[User]) -> str:
         """Returns the change block as markdown."""
-        return f"## {self.title}\n" + "\n".join(f"- {change.as_md()}" for change in self.changes)
-
-    def as_html(self) -> str:
-        """Returns the change block as HTML."""
-        return f"<b>{self.title}</b>\n" + "\n".join(
-            f"• {change.as_html()}" for change in self.changes
+        return f"## {self.title}\n" + "\n".join(
+            f"- {change.as_md(exclude_users)}" for change in self.changes
         )
 
-    def as_rst(self) -> str:
+    def as_html(self, exclude_users: Collection[User]) -> str:
+        """Returns the change block as HTML."""
+        return f"<b>{self.title}</b>\n" + "\n".join(
+            f"• {change.as_html(exclude_users)}" for change in self.changes
+        )
+
+    def as_rst(self, exclude_users: Collection[User]) -> str:
         """Returns the change block as reStructuredText."""
-        return f"{self.title}\n\n" + "\n".join(f"  - {change.as_rst()}" for change in self.changes)
+        return f"{self.title}\n\n" + "\n".join(
+            f"  - {change.as_rst(exclude_users)}" for change in self.changes
+        )
 
 
 class Changelog(BaseModel):
@@ -237,7 +236,7 @@ class Changelog(BaseModel):
         return set().union(*(change.thread_numbers for change in self.changes))
 
     def update_changes_from_pull_requests(
-        self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
+        self, github_threads: dict[int, PullRequest | Issue]
     ) -> None:
         """Calls :meth:`Change.update_from_pull_requests` for all changes.
         Additionally, it updates :attr:`change_blocks` with the changes.
@@ -245,11 +244,9 @@ class Changelog(BaseModel):
         Args:
             github_threads (Dict[:obj:`int`: :class:`PullRequest` | :class:`Issue`]):
                 A mapping of thread numbers to pull requests or issues.
-            ptb_devs (:obj:`Collection` of :obj:`User`): The PTB developers. These will not be
-                mentioned in the changes.
         """
         for change in self.changes:
-            change.update_from_pull_requests(github_threads, ptb_devs)
+            change.update_from_pull_requests(github_threads)
             self.change_blocks[change.category].add_change(change)
 
     @property
@@ -258,9 +255,7 @@ class Changelog(BaseModel):
             if block in self.change_blocks:
                 yield self.change_blocks[block]
 
-    def as_md(
-        self,
-    ) -> str:
+    def as_md(self, exclude_users: Collection[User]) -> str:
         """Returns the changelog as markdown."""
         header = (
             f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
@@ -270,11 +265,11 @@ class Changelog(BaseModel):
         )
 
         changes = "\n\n".join(
-            block.as_md() for block in self._sorted_blocks if block.has_changes()
+            block.as_md(exclude_users) for block in self._sorted_blocks if block.has_changes()
         )
         return f"{header}\n\n{changes}"
 
-    def as_html(self) -> str:
+    def as_html(self, exclude_users: Collection[User]) -> str:
         """Returns the changelog as HTML."""
         header = (
             f"<b>We've just released v{self.version}.</b>\n\n"
@@ -282,11 +277,11 @@ class Changelog(BaseModel):
             "As usual, upgrade using <code>pip install -U python-telegram-bot</code>."
         )
         changes = "\n\n".join(
-            block.as_html() for block in self._sorted_blocks if block.has_changes()
+            block.as_html(exclude_users) for block in self._sorted_blocks if block.has_changes()
         )
         return f"{header}\n\n{changes}"
 
-    def as_rst(self) -> str:
+    def as_rst(self, exclude_users: Collection[User]) -> str:
         """Returns the changelog as reStructuredText."""
         title = f"Version {self.version}"
         header = (
@@ -297,7 +292,7 @@ class Changelog(BaseModel):
             "<https://t.me/pythontelegrambotchannel>`_."
         )
         changes = "\n\n".join(
-            block.as_rst() for block in self._sorted_blocks if block.has_changes()
+            block.as_rst(exclude_users) for block in self._sorted_blocks if block.has_changes()
         )
         return f"{header}\n\n{changes}"
 
@@ -321,14 +316,11 @@ class Changelog(BaseModel):
 
         thread_numbers = changelog.get_all_thread_numbers()
 
-        _LOGGER.info("Fetching pull requests, issues and ptb devs.")
-        threads, ptb_devs = await asyncio.gather(
-            graphql_client.get_threads(thread_numbers), graphql_client.get_ptb_devs()
-        )
+        _LOGGER.info("Fetching pull requests and  issues")
+        threads = await graphql_client.get_threads(thread_numbers)
         _LOGGER.info("Found %d pull requests and issues.", len(threads))
-        _LOGGER.info("Found the following PTB devs: %s.", ptb_devs)
 
         _LOGGER.info("Inserting fetched information into changelog.")
-        changelog.update_changes_from_pull_requests(threads, ptb_devs)
+        changelog.update_changes_from_pull_requests(threads)
 
         return changelog

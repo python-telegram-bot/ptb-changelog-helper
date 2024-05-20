@@ -48,7 +48,6 @@ async def main(
     )
     _LOGGER.info("Writing changelog to files.")
     yaml_changelog_path.write_text(to_yaml_str(changelog), encoding="utf-8")
-    await graphql_client.shutdown()
 
     print(
         f"I've written the changelog to the file {yaml_changelog_path}. "
@@ -56,10 +55,14 @@ async def main(
     )
     input()
 
-    _LOGGER.info("Converting changelog to reStructuredText and Telegram HTML.")
-    convert_to_rst(yaml_changelog_path, rst_changelog_path)
-    convert_to_html(yaml_changelog_path, html_changelog_path)
-    convert_to_md(yaml_changelog_path, md_changelog_path)
+    ptb_devs = await graphql_client.get_ptb_devs()
+    await graphql_client.shutdown()
+    _LOGGER.info("Found the following PTB devs: %s.", ptb_devs)
+
+    _LOGGER.info("Converting changelog to Markdown, reStructuredText and Telegram HTML.")
+    convert_to_rst(yaml_changelog_path, rst_changelog_path, ptb_devs)
+    convert_to_html(yaml_changelog_path, html_changelog_path, ptb_devs)
+    convert_to_md(yaml_changelog_path, md_changelog_path, ptb_devs)
 
     _LOGGER.info("Sending release notes to Telegram.")
     await publish_release_notes(
