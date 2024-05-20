@@ -6,7 +6,7 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 24.3.0
+    rev: 24.4.2
     hooks:
     -   id: black
         args:
@@ -23,20 +23,20 @@ repos:
           - --jobs=0
 
         additional_dependencies:
-          - python-telegram-bot~=21.0
-          - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.1
-          - pydantic~=2.6.3
+          - python-telegram-bot~=21.1
+          - panflute~=2.3.1
+          - gql[aiohttp]~=3.5.0
+          - pydantic~=2.7.1
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v1.10.0
     hooks:
     -   id: mypy
         name: mypy
         additional_dependencies:
-          - python-telegram-bot~=21.0
-          - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.1
-          - pydantic~=2.6.3
+          - python-telegram-bot~=21.1
+          - panflute~=2.3.1
+          - gql[aiohttp]~=3.5.0
+          - pydantic~=2.7.1
 -   repo: https://github.com/asottile/pyupgrade
     rev: v3.15.2
     hooks:
@@ -52,12 +52,12 @@ repos:
         - --diff
         - --check
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.3.5'
+    rev: 'v0.4.3'
     hooks:
     -   id: ruff
         name: ruff
         additional_dependencies:
-          - python-telegram-bot~=21.0
-          - panflute~=2.3.0
-          - gql[aiohttp]~=3.4.1
-          - pydantic~=2.6.3
+          - python-telegram-bot~=21.1
+          - panflute~=2.3.1
+          - gql[aiohttp]~=3.5.0
+          - pydantic~=2.7.1
