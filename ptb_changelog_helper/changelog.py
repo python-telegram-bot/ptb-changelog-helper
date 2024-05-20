@@ -169,14 +169,14 @@ class ChangeBlock(BaseModel):
 
     def as_html(self, exclude_users: Collection[User]) -> str:
         """Returns the change block as HTML."""
-        return f"<b>{self.title}</b>\n" + "\n".join(
+        return f"<b>{self.title}</b>\n\n" + "\n".join(
             f"• {change.as_html(exclude_users)}" for change in self.changes
         )
 
     def as_rst(self, exclude_users: Collection[User]) -> str:
         """Returns the change block as reStructuredText."""
-        return f"{self.title}\n\n" + "\n".join(
-            f"  - {change.as_rst(exclude_users)}" for change in self.changes
+        return f"{self.title}\n{'-' * len(self.title)}\n\n" + "\n".join(
+            f"- {change.as_rst(exclude_users)}" for change in self.changes
         )
 
 
@@ -272,9 +272,10 @@ class Changelog(BaseModel):
     def as_html(self, exclude_users: Collection[User]) -> str:
         """Returns the changelog as HTML."""
         header = (
-            f"<b>We've just released v{self.version}.</b>\n\n"
-            "Thank you to everyone who contributed to this release.\n\n"
-            "As usual, upgrade using <code>pip install -U python-telegram-bot</code>."
+            f"<b>We've just released v{self.version}.</b>\n"
+            "Thank you to everyone who contributed to this release.\n"
+            "As usual, upgrade using <code>pip install -U python-telegram-bot</code>.\n\n"
+            "For the full list of changes and improvements, please see the below changelog."
         )
         changes = "\n\n".join(
             block.as_html(exclude_users) for block in self._sorted_blocks if block.has_changes()
@@ -286,8 +287,8 @@ class Changelog(BaseModel):
         title = f"Version {self.version}"
         header = (
             f"{title}\n{'=' * len(title)}\n\n"
-            f"Released {self.date.isoformat()}\n\n"
-            "This is the technical changelog for version {self.version}. More elaborate "
+            f"*Released {self.date.isoformat()}*\n\n"
+            f"This is the technical changelog for version {self.version}. More elaborate "
             "release notes can be found in the news channel `@pythontelegrambotchannel "
             "<https://t.me/pythontelegrambotchannel>`_."
         )
