@@ -86,7 +86,7 @@ class User(BaseModel):
     login: str
     url: str
 
-    def as_markdown(self) -> str:
+    def as_md(self) -> str:
         """Returns the user as markdown."""
         return f"[@{self.login}]({self.url})"
 
@@ -94,6 +94,13 @@ class User(BaseModel):
         """We do this to ensure that authors are treated as users for the purposes of hashing,
         especially for checking whether a author is in a collection of users."""
         return hash((self.login, self.url))
+
+    def __eq__(self, other: object) -> bool:
+        """We do this to ensure that authors are treated as users for the purposes of hashing,
+        especially for checking whether a author is in a collection of users."""
+        if isinstance(other, User):
+            return self.login == other.login
+        return NotImplemented
 
 
 DEPENDABOT_USER = User(login="dependabot", url="https://github.com/apps/dependabot")
@@ -106,6 +113,18 @@ class Author(User):
     """This class represents the author of a GitHub thread.
     Basically an alias for :class:`User`.
     """
+
+    def as_md(self) -> str:
+        """Return a Markdown representation of the issue."""
+        return self.login
+
+    def as_html(self) -> str:
+        """Return a HTML representation of the issue."""
+        return f'<a href="{self.url}">{self.login}</a>'
+
+    def as_rst(self) -> str:
+        """Return a reStructuredText representation of the issue."""
+        return f"`{self.login} <{self.url}>`_"
 
 
 class Issue(BaseModel):
@@ -126,6 +145,18 @@ class Issue(BaseModel):
     def __init__(self, **data: dict[str, Any]) -> None:
         super().__init__(**data)
         _issue_pagination_warning(f"Issue {self.number}", "labels", self.labels)
+
+    def as_md(self) -> str:
+        """Return a Markdown representation of the issue."""
+        return f"{self.number}"
+
+    def as_html(self) -> str:
+        """Return a HTML representation of the issue."""
+        return f'<a href="{self.url}">#{self.number}</a>'
+
+    def as_rst(self) -> str:
+        """Return a reStructuredText representation of the issue."""
+        return f":issue:`{self.number}`"
 
 
 class ClosingIssuesReferences(_Connection):
@@ -167,7 +198,7 @@ class PullRequest(BaseModel):
             f"PullRequest {self.number}", "closing issues", self.closingIssuesReferences
         )
 
-    def as_markdown(self, exclude_users: Collection[User] = ()) -> str:
+    def as_md(self, exclude_users: Collection[User] = ()) -> str:
         """Return a Markdown representation of the pull request.
 
         This includes the author - unless excluded - and the closing issues references.
@@ -183,18 +214,78 @@ class PullRequest(BaseModel):
         md_str = f"#{self.number}"
 
         if self.author not in exclude_users:
-            md_str += f" by {self.author.as_markdown()}"
+            md_str += f" by {self.author.as_md()}"
 
         if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
             nodes = self.closingIssuesReferences.nodes
             md_str += " closes "
             if len(nodes) == 1:
-                md_str += f"#{nodes[0].number}"
+                md_str += nodes[0].as_md()
             else:
-                md_str += f"{', #'.join(str(node.number) for node in nodes[:-1])} "
-                md_str += f"and #{nodes[-1].number}"
+                md_str += f"{', '.join(node.as_md() for node in nodes[:-1])} "
+                md_str += f"and {nodes[-1].as_md()}"
 
         return md_str
+
+    def as_html(self, exclude_users: Collection[User] = ()) -> str:
+        """
+        Return a HTML representation of the pull request.
+
+        This includes the author - unless excluded - and the closing issues references.
+
+        Args:
+            exclude_users (Collection[:class:`User`]): A collection of users to exclude from the
+                HTML representation. The users :attr:`DEPENDABOT_USER` and
+                :attr:`PRE_COMMIT_CI_USER` are always excluded.
+        """
+        exclude_users = set(exclude_users)
+        exclude_users.update({DEPENDABOT_USER, PRE_COMMIT_CI_USER})
+
+        html_str = f'<a href="{self.url}">#{self.number}</a>'
+
+        if self.author not in exclude_users:
+            html_str += f" by {self.author.as_html()}"
+
+        if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
+            nodes = self.closingIssuesReferences.nodes
+            html_str += " closes "
+            if len(nodes) == 1:
+                html_str += nodes[0].as_html()
+            else:
+                html_str += f"{', '.join(node.as_html() for node in nodes[:-1])} "
+                html_str += f"and {nodes[-1].as_html()}"
+
+        return html_str
+
+    def as_rst(self, exclude_users: Collection[User] = ()) -> str:
+        """
+        Return a reStructuredText representation of the pull request.
+
+        This includes the author - unless excluded - and the closing issues references.
+
+        Args:
+            exclude_users (Collection[:class:`User`]): A collection of users to exclude from the
+                reStructuredText representation. The users :attr:`DEPENDABOT_USER` and
+                :attr:`PRE_COMMIT_CI_USER` are always excluded.
+        """
+        exclude_users = set(exclude_users)
+        exclude_users.update({DEPENDABOT_USER, PRE_COMMIT_CI_USER})
+
+        rst_str = f":pr:`{self.number}`"
+
+        if self.author not in exclude_users:
+            rst_str += f" by {self.author.as_rst()}"
+
+        if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
+            nodes = self.closingIssuesReferences.nodes
+            rst_str += " closes "
+            if len(nodes) == 1:
+                rst_str += nodes[0].as_rst()
+            else:
+                rst_str += f"{', '.join(node.as_rst() for node in nodes[:-1])} "
+                rst_str += f"and {nodes[-1].as_rst()}"
+
+        return rst_str
 
     def effective_labels(self) -> set[Label]:
         """Return the effective labels of the pull request, i.e. the labels of the pull request

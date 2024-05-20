@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 99
-target-version = ['py310', 'py311']
+target-version = ['py311', 'py312']
 
 [tool.isort]  # black config
 profile = "black"
@@ -8,8 +8,36 @@ line_length = 99
 
 [tool.ruff]
 line-length = 99
-target-version = "py310"
+target-version = "py311"
 show-fixes = true
-#ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915"]
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
 select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET", "RSE",
-          "G", "ISC", "PT"]
+          "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "RUF022",
+          "RUF023", "Q", "INP", "W", "YTT", "DTZ", "ARG"]
+
+[tool.mypy]
+plugins = [
+  "pydantic.mypy"
+]
+python_version = "3.11"
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+show_error_codes = true
+no_implicit_reexport = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pylint."messages control"]
+enable = ["useless-suppression"]
+disable = ["too-few-public-methods"]

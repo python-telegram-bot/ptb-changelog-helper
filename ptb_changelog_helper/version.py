@@ -1,6 +1,7 @@
 """This module contains a class that represents a version number."""
 
-from typing import Literal, NamedTuple
+import re
+from typing import Final, Literal, NamedTuple
 
 
 class Version(NamedTuple):
@@ -28,3 +29,17 @@ class Version(NamedTuple):
             version = f"{version}{self._rl_shorthand()}{self.serial}"
 
         return version
+
+
+VERSION_PATTERN: Final[re.Pattern[str]] = re.compile(
+    pattern=r"""
+    __version_info__:\ Final\[Version\]\ =\ Version\(\s*
+        major=(?P<major>\d+),\s*
+        minor=(?P<minor>\d+),\s*
+        micro=(?P<micro>\d+),\s*
+        releaselevel=(?P<releaselevel>[\"a-z]+),\s*
+        serial=(?P<serial>\d+)\s*
+    \)
+    """,
+    flags=re.VERBOSE,
+)

@@ -3,13 +3,13 @@
 import asyncio
 import datetime
 import logging
-import pickle
 from collections.abc import Collection, Iterable
 from enum import StrEnum
-from pathlib import Path
-from typing import Literal
+from typing import Annotated, Any
 
-from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN
+from pydantic import BaseModel, Field
+
+from ptb_changelog_helper.const import GITHUB_THREAD_PATTERN, MD_MONO_PATTERN
 from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
 from ptb_changelog_helper.graphqlclient import GraphQLClient
 from ptb_changelog_helper.version import Version
@@ -62,7 +62,7 @@ class ChangeCategory(StrEnum):
         return cls.MAJOR
 
 
-class Change:
+class Change(BaseModel):
     """This class represents a single change.
 
     Args:
@@ -79,17 +79,17 @@ class Change:
             change. This is set by :meth:`update_from_pull_requests`.
     """
 
-    def __init__(
-        self,
-        text: str,
-    ):
-        self.text: str = text
+    text: str
+    pull_requests: Annotated[set[PullRequest], Field(default_factory=set, init=False)]
+    thread_numbers: Annotated[set[int], Field(default_factory=set, init=False)]
+    category: Annotated[ChangeCategory, Field(default=ChangeCategory.MAJOR, init=False)]
+    effective_labels: Annotated[set[Label], Field(default_factory=set, init=False)]
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
         self.thread_numbers: set[int] = {
             int(match.group(2)) for match in GITHUB_THREAD_PATTERN.finditer(self.text)
         }
-        self.category: ChangeCategory = ChangeCategory.MAJOR
-        self.pull_requests: set[PullRequest] = set()
-        self.effective_labels: set[Label] = set()
 
     def update_from_pull_requests(
         self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
@@ -98,7 +98,7 @@ class Change:
         Also
 
             * updates the :attr:`text` with additional information as provided by
-                :meth:`PullRequest.as_markdown`.
+                :meth:`PullRequest.as_md`.
             * updates the :attr:`effective_labels` with the labels of the pull requests.
             * updates the :attr:`category` with the category of the pull requests as derived
                 from the labels via :meth:`ChangeCategory.resolve_from_labels`.
@@ -117,7 +117,7 @@ class Change:
 
         for pull_request in self.pull_requests:
             self.text = self.text.replace(
-                f"#{pull_request.number}", pull_request.as_markdown(exclude_users=ptb_devs)
+                f"#{pull_request.number}", pull_request.as_md(exclude_users=ptb_devs)
             )
 
         self.effective_labels.update(
@@ -125,12 +125,25 @@ class Change:
         )
         self.category = ChangeCategory.resolve_from_labels(self.effective_labels)
 
-    def as_markdown(self) -> str:
-        """Returns the change as markdown."""
-        return self.text
+    def as_md(self) -> str:
+        """Returns the change as markdown including information about the associated pull requests
+        and issues."""
+        return f"{self.text} ({', '.join(pr.as_md() for pr in self.pull_requests)})"
+
+    def as_html(self) -> str:
+        """Returns the change as HTML including information about the associated pull requests
+        and issues."""
+        text = MD_MONO_PATTERN.sub(r"<code>\1</code>", self.text)
+        return f"{text} ({', '.join(pr.as_html() for pr in self.pull_requests)})"
+
+    def as_rst(self) -> str:
+        """Returns the change as reStructuredText including information about the associated pull
+        requests and issues."""
+        text = MD_MONO_PATTERN.sub(r"``\1``", self.text)
+        return f"{text} ({', '.join(pr.as_rst() for pr in self.pull_requests)})"
 
 
-class ChangeBlock:
+class ChangeBlock(BaseModel):
     """This class represents a block of changes that is usually associated with a specific
     category.
 
@@ -138,9 +151,8 @@ class ChangeBlock:
         title (:obj:`str`): The title of the change block.
     """
 
-    def __init__(self, title: str):
-        self.title = title
-        self.changes: list[Change] = []
+    title: str
+    changes: Annotated[list[Change], Field(default_factory=list, init=False)]
 
     def add_change(self, change: Change) -> None:
         """Adds a change to the change block.
@@ -150,18 +162,26 @@ class ChangeBlock:
         """
         self.changes.append(change)
 
-    def as_markdown(self) -> str:
-        """Returns the change block as markdown."""
-        return f"## {self.title}\n" + "\n".join(
-            f"- {change.as_markdown()}" for change in self.changes
-        )
-
     def has_changes(self) -> bool:
         """Returns whether the change block has changes."""
         return bool(self.changes)
 
+    def as_md(self) -> str:
+        """Returns the change block as markdown."""
+        return f"## {self.title}\n" + "\n".join(f"- {change.as_md()}" for change in self.changes)
 
-class Changelog:
+    def as_html(self) -> str:
+        """Returns the change block as HTML."""
+        return f"<b>{self.title}</b>\n" + "\n".join(
+            f"• {change.as_html()}" for change in self.changes
+        )
+
+    def as_rst(self) -> str:
+        """Returns the change block as reStructuredText."""
+        return f"{self.title}\n\n" + "\n".join(f"  - {change.as_rst()}" for change in self.changes)
+
+
+class Changelog(BaseModel):
     """This class represents a changelog for a specific version.
 
     Args:
@@ -169,18 +189,23 @@ class Changelog:
         date (:obj:`datetime.date`, optional): The release date of the version. Defaults to today.
 
     Attributes:
-        changes (:obj:`set` of :class:`Change`, optional): The changes of the version.
+        changes (:obj:`list` of :class:`Change`, optional): The changes of the version.
         change_blocks (Dict[:obj:`ChangeCategory`: :class:`ChangeBlock`]): The change blocks of
             the changelog. Will be set by :meth:`update_changes_from_pull_requests`.
     """
 
-    def __init__(self, version: Version, date: datetime.date | None = None) -> None:
-        self.version: Version = version
-        self.date = date or datetime.date.today()
-        self.changes: set[Change] = set()
-        self.change_blocks: dict[ChangeCategory, ChangeBlock] = {
-            category: ChangeBlock(title=category) for category in ChangeCategory
-        }
+    version: Version
+    date: Annotated[datetime.date, Field(default_factory=datetime.date.today)]
+    changes: Annotated[list[Change], Field(default_factory=list, init=False)]
+    change_blocks: Annotated[
+        dict[ChangeCategory, ChangeBlock],
+        Field(
+            default_factory=lambda: {
+                category: ChangeBlock(title=category) for category in ChangeCategory
+            },
+            init=False,
+        ),
+    ]
 
     def add_change(self, change: Change) -> None:
         """Adds a change to the backlog.
@@ -189,7 +214,7 @@ class Changelog:
             change (:class:`Change`): The change to add.
 
         """
-        self.changes.add(change)
+        self.changes.append(change)
 
     def add_changes(self, changes: Iterable[Change]) -> None:
         """Adds multiple changes to the backlog.
@@ -197,7 +222,7 @@ class Changelog:
         Args:
             changes (Iterable[:class:`Change`]): The changes to add.
         """
-        self.changes.update(changes)
+        self.changes.extend(changes)
 
     def add_changes_from_commits(self, commits: Iterable[Commit]) -> None:
         """Adds multiple changes from commits to the backlog.
@@ -205,11 +230,11 @@ class Changelog:
         Args:
             commits (Iterable[:class:`Commit]): The commits to add as changes.
         """
-        self.add_changes(Change(commit.effective_text()) for commit in commits)
+        self.add_changes(Change(text=commit.effective_text()) for commit in commits)
 
     def get_all_thread_numbers(self) -> set[int]:
         """Returns all thread numbers of the changes in the changelog."""
-        return set().union(*(chang.thread_numbers for chang in self.changes))
+        return set().union(*(change.thread_numbers for change in self.changes))
 
     def update_changes_from_pull_requests(
         self, github_threads: dict[int, PullRequest | Issue], ptb_devs: Collection[User]
@@ -227,33 +252,58 @@ class Changelog:
             change.update_from_pull_requests(github_threads, ptb_devs)
             self.change_blocks[change.category].add_change(change)
 
-    def as_markdown(
+    @property
+    def _sorted_blocks(self) -> Iterable[ChangeBlock]:
+        for block in ChangeCategory:
+            if block in self.change_blocks:
+                yield self.change_blocks[block]
+
+    def as_md(
         self,
-        target: Literal["docs", "channel"],
     ) -> str:
         """Returns the changelog as markdown."""
-        if target == "docs":
-            header = (
-                f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
-                f"This is the technical changelog for version {self.version}. More elaborate "
-                f"release notes can be found in the news channel [@pythontelegrambotchannel]("
-                f"https://t.me/pythontelegrambotchannel)."
-            )
-        else:
-            header = (
-                f"**We've just released v{self.version}.**\n\n"
-                "Thank you to everyone who contributed to this release.\n\n"
-                "As usual, upgrade using `pip install -U python-telegram-bot`."
-            )
+        header = (
+            f"# Version {self.version}\n*Released {self.date.isoformat()}*\n\n"
+            f"This is the technical changelog for version {self.version}. More elaborate "
+            f"release notes can be found in the news channel [@pythontelegrambotchannel]("
+            f"https://t.me/pythontelegrambotchannel)."
+        )
 
         changes = "\n\n".join(
-            block.as_markdown() for block in self.change_blocks.values() if block.has_changes()
+            block.as_md() for block in self._sorted_blocks if block.has_changes()
         )
-        return header + "\n\n" + changes
+        return f"{header}\n\n{changes}"
+
+    def as_html(self) -> str:
+        """Returns the changelog as HTML."""
+        header = (
+            f"<b>We've just released v{self.version}.</b>\n\n"
+            "Thank you to everyone who contributed to this release.\n\n"
+            "As usual, upgrade using <code>pip install -U python-telegram-bot</code>."
+        )
+        changes = "\n\n".join(
+            block.as_html() for block in self._sorted_blocks if block.has_changes()
+        )
+        return f"{header}\n\n{changes}"
+
+    def as_rst(self) -> str:
+        """Returns the changelog as reStructuredText."""
+        title = f"Version {self.version}"
+        header = (
+            f"{title}\n{'=' * len(title)}\n\n"
+            f"Released {self.date.isoformat()}\n\n"
+            "This is the technical changelog for version {self.version}. More elaborate "
+            "release notes can be found in the news channel `@pythontelegrambotchannel "
+            "<https://t.me/pythontelegrambotchannel>`_."
+        )
+        changes = "\n\n".join(
+            block.as_rst() for block in self._sorted_blocks if block.has_changes()
+        )
+        return f"{header}\n\n{changes}"
 
     @classmethod
     async def build_for_version(
-        cls, version: Version, graphql_client: GraphQLClient, store_threads: Path | None = None
+        cls, version: Version, graphql_client: GraphQLClient
     ) -> "Changelog":
         """Builds a changelog for a specific version.
 
@@ -261,11 +311,8 @@ class Changelog:
             version (:class:`Version`): The version of the changelog.
             graphql_client (:class:`GraphQLClient`): The GraphQL client to use for fetching the
                 data from GitHub.
-            store_threads (:obj:`Path`, optional): A path to a file where the threads will be
-                stored as pickle file. Defaults to ``None``.
-
         """
-        changelog = cls(version=version)
+        changelog = cls(version=version)  # type: ignore[call-arg]
 
         _LOGGER.info("Fetching commits since last release.")
         commits = await graphql_client.get_commits_since_last_release()
@@ -283,10 +330,5 @@ class Changelog:
 
         _LOGGER.info("Inserting fetched information into changelog.")
         changelog.update_changes_from_pull_requests(threads, ptb_devs)
-
-        if store_threads:
-            _LOGGER.info("Storing threads in %s.", store_threads)
-            with store_threads.open("wb") as file:
-                pickle.dump(threads, file)
 
         return changelog
