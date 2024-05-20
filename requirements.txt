@@ -1,4 +1,4 @@
 python-telegram-bot~=21.1
-panflute~=2.5.2
+panflute~=2.3.1
 gql[aiohttp]~=3.5.0
 pydantic~=2.7.1
