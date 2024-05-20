@@ -148,7 +148,7 @@ class Issue(BaseModel):
 
     def as_md(self) -> str:
         """Return a Markdown representation of the issue."""
-        return f"{self.number}"
+        return f"#{self.number}"
 
     def as_html(self) -> str:
         """Return a HTML representation of the issue."""

@@ -29,10 +29,8 @@ def update_version(ptb_dir: Path, new_version: Version) -> None:
                 return f'"{val}"'
             return str(val)
 
-        print(match.groupdict())
         full_match = match.group(0)
         for key, value in match.groupdict().items():
-            print(key, value, getattr(new_version, key))
             if key not in new_version._fields:
                 continue
             full_match = full_match.replace(
@@ -41,11 +39,6 @@ def update_version(ptb_dir: Path, new_version: Version) -> None:
 
         return full_match
 
-    # print(text)
-    # print("=====")
-    # print(VERSION_PATTERN)
-    # print("=====")
-    print(re.findall(VERSION_PATTERN, text))
     text = re.sub(
         pattern=VERSION_PATTERN,
         repl=replace_version,
