@@ -58,6 +58,9 @@ fragment issueFragment on Issue {
     labels(after: "") {
         ...labelConnectionFragment
     }
+    issueType {
+        name
+    }
     author {
         ... authorFragment
     }

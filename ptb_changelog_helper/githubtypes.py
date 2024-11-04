@@ -127,6 +127,16 @@ class Author(User):
         return f"`{self.login} <{self.url}>`_"
 
 
+class IssueType(BaseModel):
+    """This class represents a GitHub issue type.
+
+    Attributes:
+        name (:obj:`str`): The name of the issue type.
+    """
+
+    name: str
+
+
 class Issue(BaseModel):
     """This class represents a GitHub issue.
 
@@ -141,6 +151,7 @@ class Issue(BaseModel):
     url: str
     labels: LabelConnection | None
     author: Author
+    issueType: IssueType | None
 
     def __init__(self, **data: dict[str, Any]) -> None:
         super().__init__(**data)
@@ -301,6 +312,19 @@ class PullRequest(BaseModel):
                     labels.update(set(issue.labels.nodes))
 
         return labels
+
+    def effective_issue_types(self) -> set[IssueType]:
+        """Return the effective issue types of the pull request, i.e. the issue types of the pull
+        the issue types of the closing issues references.
+        """
+        issue_types = set()
+
+        if self.closingIssuesReferences and self.closingIssuesReferences.nodes:
+            for issue in self.closingIssuesReferences.nodes:
+                if issue.issueType:
+                    issue_types.add(issue.issueType)
+
+        return issue_types
 
 
 class MembersWithRole(_Connection):

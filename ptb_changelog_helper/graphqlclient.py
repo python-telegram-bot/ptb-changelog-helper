@@ -33,6 +33,7 @@ class GraphQLClient:
             headers={
                 "Authorization": authorization,
                 "user-agent": USER_AGENT,
+                "GraphQL-Features": "issue_types",
             },
         )
         self._session = AsyncClientSession(Client(transport=self._transport))

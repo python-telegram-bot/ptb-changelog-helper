@@ -13,7 +13,7 @@ from ptb_changelog_helper.const import (
     GITHUB_THREADS_PATTERN,
     MD_MONO_PATTERN,
 )
-from ptb_changelog_helper.githubtypes import Commit, Issue, Label, PullRequest, User
+from ptb_changelog_helper.githubtypes import Commit, Issue, IssueType, Label, PullRequest, User
 from ptb_changelog_helper.graphqlclient import GraphQLClient
 from ptb_changelog_helper.version import Version
 
@@ -32,28 +32,34 @@ class ChangeCategory(StrEnum):
     DEPENDENCIES: str = "Dependency Updates"
 
     @classmethod
-    def resolve_from_labels(cls, labels: Collection[Label]) -> "ChangeCategory":
-        """Given a set of labels, return the category that best matches the labels.
+    def resolve_from_labels_and_types(
+        cls, labels: Collection[Label], issue_type: Collection[IssueType]
+    ) -> "ChangeCategory":
+        """Given a set of labels and a set of issue type,s return the category that best matches
+        the labels and types.
 
         Args:
             labels (:obj:`Collection` of :obj:`Label`): The labels to resolve.
+            issue_type (:obj:`Collection` of :obj:`IssueType`): The issue types to resolve.
         """
         mapping = {
-            "bug :bug:": cls.BUG_FIXES,
-            "enhancement": cls.NEW_FEATURES,
-            "API": cls.MAJOR,
-            "documentation": cls.DOCUMENTATION,
-            "tests": cls.INTERNAL,
-            "security :lock:": cls.BUG_FIXES,
-            "examples": cls.DOCUMENTATION,
-            "type hinting": cls.MINOR,
-            "refactor :gear:": cls.INTERNAL,
-            "breaking :boom:": cls.MAJOR,
-            "dependencies": cls.DEPENDENCIES,
-            "github_actions": cls.INTERNAL,
-            "code quality ✨": cls.INTERNAL,
+            "🐛 bug": cls.BUG_FIXES,
+            "💡 feature": cls.NEW_FEATURES,
+            "⚙️ bot-api": cls.MAJOR,
+            "⚙️ documentation": cls.DOCUMENTATION,
+            "⚙️ tests": cls.INTERNAL,
+            "⚙️ ci-cd": cls.INTERNAL,
+            "⚙️ security :lock:": cls.BUG_FIXES,
+            "⚙️ examples": cls.DOCUMENTATION,
+            "⚙️ type-hinting": cls.MINOR,
+            "🛠 refactor": cls.INTERNAL,
+            "🛠 breaking": cls.MAJOR,
+            "⚙️ dependencies": cls.DEPENDENCIES,
+            "🔗 github-actions": cls.INTERNAL,
+            "🛠 code-quality": cls.INTERNAL,
         }
         label_names = {label.name for label in labels}
+        label_names.update({issue_type.name for issue_type in issue_type})
         for source_label, category in mapping.items():
             for label in label_names:
                 if source_label == label:
@@ -80,6 +86,8 @@ class Change(BaseModel):
             with the change. This is set by :meth:`update_from_pull_requests`.
         effective_labels (:obj:`set` of :obj:`Label`, optional): The effective labels of the
             change. This is set by :meth:`update_from_pull_requests`.
+        effective_issue_types (:obj:`set` of :obj:`IssueType`, optional): The effective issue types
+            of the change. This is set by :meth:`update_from_pull_requests`.
     """
 
     text: str
@@ -87,6 +95,7 @@ class Change(BaseModel):
     thread_numbers: Annotated[set[int], Field(default_factory=set, init=False)]
     category: Annotated[ChangeCategory, Field(default=ChangeCategory.MAJOR, init=False)]
     effective_labels: Annotated[set[Label], Field(default_factory=set, init=False)]
+    effective_issue_types: Annotated[set[IssueType], Field(default_factory=set, init=False)]
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -103,7 +112,7 @@ class Change(BaseModel):
                 :meth:`PullRequest.as_md`.
             * updates the :attr:`effective_labels` with the labels of the pull requests.
             * updates the :attr:`category` with the category of the pull requests as derived
-                from the labels via :meth:`ChangeCategory.resolve_from_labels`.
+                from the labels via :meth:`ChangeCategory.resolve_from_labels_and_types`.
 
         Args:
             github_threads (Dict[:obj:`int`: :class:`PullRequest` | :class:`Issue`]):
@@ -118,7 +127,12 @@ class Change(BaseModel):
         self.effective_labels.update(
             *(pull_request.effective_labels() for pull_request in self.pull_requests)
         )
-        self.category = ChangeCategory.resolve_from_labels(self.effective_labels)
+        self.effective_issue_types.update(
+            *(pull_request.effective_issue_types() for pull_request in self.pull_requests)
+        )
+        self.category = ChangeCategory.resolve_from_labels_and_types(
+            self.effective_labels, self.effective_issue_types
+        )
 
     def as_md(self, exclude_users: Collection[User]) -> str:
         """Returns the change as markdown including information about the associated pull requests

@@ -28,7 +28,7 @@ def _convert_to_format(
         ptb_devs (:obj:`Collection`[:class:`User`]): The PTB devs to include in the changelog.
     """
     _LOGGER.info("Converting changelog to %s.", target_format.upper())
-    changelog = parse_yaml_file_as(model_type=Changelog, file=input_file)
+    changelog = parse_yaml_file_as(model_type=Changelog, file=input_file.open("rb"))
     with output_file.open("w", encoding="utf-8") as file:
         file.write(getattr(changelog, f"as_{target_format}")(ptb_devs))
 
