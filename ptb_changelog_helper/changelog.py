@@ -23,13 +23,13 @@ _LOGGER = logging.getLogger(__name__)
 class ChangeCategory(StrEnum):
     """This enum contains the categories for changes."""
 
-    MAJOR: str = "Major Changes"
-    MINOR: str = "Minor Changes"
-    NEW_FEATURES: str = "New Features"
-    BUG_FIXES: str = "Bug Fixes"
-    DOCUMENTATION: str = "Documentation Improvements"
-    INTERNAL: str = "Internal Changes"
-    DEPENDENCIES: str = "Dependency Updates"
+    MAJOR = "Major Changes"
+    MINOR = "Minor Changes"
+    NEW_FEATURES = "New Features"
+    BUG_FIXES = "Bug Fixes"
+    DOCUMENTATION = "Documentation Improvements"
+    INTERNAL = "Internal Changes"
+    DEPENDENCIES = "Dependency Updates"
 
     @classmethod
     def resolve_from_labels_and_types(
