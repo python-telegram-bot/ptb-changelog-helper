@@ -6,14 +6,14 @@ ci:
 
 repos:
 -   repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.1.0
     hooks:
     -   id: black
         args:
         - --diff
         - --check
 -   repo: https://github.com/PyCQA/pylint
-    rev: v3.3.3
+    rev: v3.3.4
     hooks:
     -   id: pylint
         args:
@@ -43,7 +43,7 @@ repos:
         args:
           - --py310-plus
 -   repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 6.0.0
     hooks:
     -   id: isort
         name: isort
@@ -51,7 +51,7 @@ repos:
         - --diff
         - --check
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.8.6'
+    rev: 'v0.9.4'
     hooks:
     -   id: ruff
         name: ruff
