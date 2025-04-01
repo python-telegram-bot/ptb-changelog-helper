@@ -23,7 +23,7 @@ repos:
 
         additional_dependencies:
           - python-telegram-bot~=21.10
-          - gql[aiohttp]~=3.5.1
+          - gql[aiohttp]~=3.5.2
           - pydantic~=2.10.6
           - pydantic-yaml~=1.4.0
 -   repo: https://github.com/pre-commit/mirrors-mypy
@@ -33,7 +33,7 @@ repos:
         name: mypy
         additional_dependencies:
           - python-telegram-bot~=21.10
-          - gql[aiohttp]~=3.5.1
+          - gql[aiohttp]~=3.5.2
           - pydantic~=2.10.6
           - pydantic-yaml~=1.4.0
 -   repo: https://github.com/asottile/pyupgrade
@@ -57,6 +57,6 @@ repos:
         name: ruff
         additional_dependencies:
           - python-telegram-bot~=21.10
-          - gql[aiohttp]~=3.5.1
+          - gql[aiohttp]~=3.5.2
           - pydantic~=2.10.6
           - pydantic-yaml~=1.4.0
