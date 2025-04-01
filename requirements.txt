@@ -1,4 +1,4 @@
 python-telegram-bot~=21.10
-gql[aiohttp]~=3.5.1
+gql[aiohttp]~=3.5.2
 pydantic~=2.10.6
 pydantic-yaml~=1.4.0
