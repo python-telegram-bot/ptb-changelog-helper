@@ -1,3 +1,6 @@
+> [!Warning]
+> This repo is archived, as `python-telegram-bot` uses [`chango`](https://chango.readthedocs.io/stable/) since [v22](https://docs.python-telegram-bot.org/en/v22.0/changelog.html#documentation).
+
 # ptb-release-helper
 *A little something to help PTB devs with their releases.* 
 
